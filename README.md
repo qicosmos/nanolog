@@ -1,2 +1,2 @@
 # nanolog
-modern C++ ORM, C++17, support mysql, postgresql,sqlite
+header only log inherited from Nanolog 
