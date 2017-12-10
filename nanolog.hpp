@@ -83,12 +83,6 @@ namespace nanolog
 		};
 	} // anonymous namespace
 
-	struct string_literal_t
-	{
-		explicit string_literal_t(char const * s) : m_s(s) {}
-		char const * m_s;
-	};
-
 	inline char const * to_string(LogLevel loglevel)
 	{
 		switch (loglevel)
@@ -106,14 +100,14 @@ namespace nanolog
 	class NanoLogLine
 	{
 	public:
-		typedef std::tuple < char, uint32_t, uint64_t, int32_t, int64_t, double, string_literal_t, char * > SupportedTypes;
+		typedef std::tuple < char, uint32_t, uint64_t, int32_t, int64_t, double, const char*, char * > SupportedTypes;
 		NanoLogLine(LogLevel level, char const * file, char const * function, uint32_t line) : m_bytes_used(0)
 			, m_buffer_size(sizeof(m_stack_buffer))
 		{
 			encode < uint64_t >(timestamp_now());
 			encode < std::thread::id >(this_thread_id());
-			encode < string_literal_t >(string_literal_t(file));
-			encode < string_literal_t >(string_literal_t(function));
+			encode < char const * >(file);
+			encode < char const * >(function);
 			encode < uint32_t >(line);
 			encode < LogLevel >(level);
 		}
@@ -129,8 +123,8 @@ namespace nanolog
 			char const * const end = b + m_bytes_used;
 			uint64_t timestamp = *reinterpret_cast <uint64_t *>(b); b += sizeof(uint64_t);
 			std::thread::id threadid = *reinterpret_cast <std::thread::id *>(b); b += sizeof(std::thread::id);
-			string_literal_t file = *reinterpret_cast <string_literal_t *>(b); b += sizeof(string_literal_t);
-			string_literal_t function = *reinterpret_cast <string_literal_t *>(b); b += sizeof(string_literal_t);
+			const char* file = *reinterpret_cast <const char* *>(b); b += sizeof(const char*);
+			const char* function = *reinterpret_cast <const char* *>(b); b += sizeof(const char*);
 			uint32_t line = *reinterpret_cast <uint32_t *>(b); b += sizeof(uint32_t);
 			LogLevel loglevel = *reinterpret_cast <LogLevel *>(b); b += sizeof(LogLevel);
 
@@ -138,7 +132,7 @@ namespace nanolog
 
 			os << '[' << to_string(loglevel) << ']'
 				<< '[' << threadid << ']'
-				<< '[' << file.m_s << ':' << function.m_s << ':' << line << "] ";
+				<< '[' << file << ':' << function << ':' << line << "] ";
 
 			stringify(os, b, end);
 
@@ -192,7 +186,7 @@ namespace nanolog
 		template < size_t N >
 		NanoLogLine& operator<<(const char(&arg)[N])
 		{
-			encode(string_literal_t(arg));
+			encode(arg);
 			return *this;
 		}
 
@@ -267,10 +261,10 @@ namespace nanolog
 			m_bytes_used += 1 + length + 1;
 		}
 
-		void encode(string_literal_t arg)
-		{
-			encode < string_literal_t >(arg, TupleIndex < string_literal_t, SupportedTypes >::value);
-		}
+		//void encode(const char* arg)
+		//{
+		//	encode < const char* >(arg, TupleIndex < const char*, SupportedTypes >::value);
+		//}
 
 		template < typename Arg >
 		void encode(Arg arg)
@@ -296,11 +290,11 @@ namespace nanolog
 		}
 
 		//template <>
-		char * decode(std::ostream & os, char * b, string_literal_t * dummy)
+		char * decode(std::ostream & os, char * b, const char* * dummy)
 		{
-			string_literal_t s = *reinterpret_cast <string_literal_t *>(b);
-			os << s.m_s;
-			return b + sizeof(string_literal_t);
+			const char* s = *reinterpret_cast <const char* *>(b);
+			os << s;
+			return b + sizeof(const char*);
 		}
 
 		//template <>
