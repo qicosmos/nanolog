@@ -115,12 +115,12 @@ namespace nanolog
 		NanoLogLine(LogLevel level, char const * file, char const * function, uint32_t line) : m_bytes_used(0)
 			, m_buffer_size(sizeof(m_stack_buffer))
 		{
-			encode0 < uint64_t >(timestamp_now());
-			encode0 < std::thread::id >(this_thread_id());
-			encode0 < char const * >(file);
-			encode0 < char const * >(function);
-			encode0 < uint32_t >(line);
-			encode0 < LogLevel >(level);
+			encode0(timestamp_now());
+			encode0(this_thread_id());
+			encode0(file);
+			encode0(function);
+			encode0(line);
+			encode0(level);
 		}
 
 		~NanoLogLine() = default;
@@ -157,7 +157,7 @@ namespace nanolog
 		NanoLogLine& operator<<(Arg arg)
 		{
 			if constexpr(std::is_arithmetic_v<Arg>) {
-				encode < Arg >(arg, TupleIndex < Arg, SupportedTypes >::value);
+				encode(arg, TupleIndex < Arg, SupportedTypes >::value);
 			}
 			else if constexpr(is_c_string_v<Arg>) {
 				encode(arg);
@@ -232,8 +232,8 @@ namespace nanolog
 		void encode(Arg arg, uint8_t type_id)
 		{
 			resize_buffer_if_needed(sizeof(Arg) + sizeof(uint8_t));
-			encode0 < uint8_t >(type_id);
-			encode0 < Arg >(arg);
+			encode0(type_id);
+			encode0(arg);
 		}
 
 		template < typename Arg >
