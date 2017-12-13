@@ -84,9 +84,9 @@ namespace nanolog
 
 		template<typename T>
 		struct is_c_string;
-		
+
 		template<typename T>
-		struct is_c_string : std::integral_constant<bool, std::is_same_v<char*, std::decay_t<T>>|| std::is_same_v<const char*, std::decay_t<T>>>
+		struct is_c_string : std::integral_constant<bool, std::is_same_v<char*, std::decay_t<T>> || std::is_same_v<const char*, std::decay_t<T>>>
 		{
 		};
 
@@ -115,12 +115,12 @@ namespace nanolog
 		NanoLogLine(LogLevel level, char const * file, char const * function, uint32_t line) : m_bytes_used(0)
 			, m_buffer_size(sizeof(m_stack_buffer))
 		{
-			encode < uint64_t >(timestamp_now());
-			encode < std::thread::id >(this_thread_id());
-			encode < char const * >(file);
-			encode < char const * >(function);
-			encode < uint32_t >(line);
-			encode < LogLevel >(level);
+			encode0 < uint64_t >(timestamp_now());
+			encode0 < std::thread::id >(this_thread_id());
+			encode0 < char const * >(file);
+			encode0 < char const * >(function);
+			encode0 < uint32_t >(line);
+			encode0 < LogLevel >(level);
 		}
 
 		~NanoLogLine() = default;
@@ -165,7 +165,7 @@ namespace nanolog
 			else if constexpr(std::is_same_v<std::string, Arg>) {
 				encode_c_string(arg.c_str(), arg.length());
 			}
-			
+
 			return *this;
 		}
 
@@ -212,25 +212,17 @@ namespace nanolog
 			m_bytes_used += 1 + length + 1;
 		}
 
-		//void encode(const char* arg)
-		//{
-		//	encode < const char* >(arg, TupleIndex < const char*, SupportedTypes >::value);
-		//}
-
-		void encode(char const * arg)
+		template < typename Arg >
+		void encode(Arg arg)
 		{
-			if (arg != nullptr)
-				encode_c_string(arg, strlen(arg));
-		}
-
-		void encode(char * arg)
-		{
-			if (arg != nullptr)
-				encode_c_string(arg, strlen(arg));
+			if constexpr(is_c_string_v<Arg>) {
+				if (arg != nullptr)
+					encode_c_string(arg, strlen(arg));
+			}
 		}
 
 		template < typename Arg >
-		void encode(Arg arg)
+		void encode0(Arg arg)
 		{
 			*reinterpret_cast<Arg*>(buffer()) = arg;
 			m_bytes_used += sizeof(Arg);
@@ -240,36 +232,38 @@ namespace nanolog
 		void encode(Arg arg, uint8_t type_id)
 		{
 			resize_buffer_if_needed(sizeof(Arg) + sizeof(uint8_t));
-			encode < uint8_t >(type_id);
-			encode < Arg >(arg);
+			encode0 < uint8_t >(type_id);
+			encode0 < Arg >(arg);
 		}
 
 		template < typename Arg >
 		char * decode(std::ostream & os, char * b, Arg * dummy)
 		{
-			Arg arg = *reinterpret_cast <Arg *>(b);
-			os << arg;
-			return b + sizeof(Arg);
-		}
-
-		//template <>
-		char * decode(std::ostream & os, char * b, const char* * dummy)
-		{
-			const char* s = *reinterpret_cast <const char* *>(b);
-			os << s;
-			return b + sizeof(const char*);
-		}
-
-		//template <>
-		char * decode(std::ostream & os, char * b, char ** dummy)
-		{
-			while (*b != '\0')
-			{
-				os << *b;
-				++b;
+			if constexpr(std::is_arithmetic_v<Arg>) {
+				Arg arg = *reinterpret_cast <Arg *>(b);
+				os << arg;
+				return b + sizeof(Arg);
 			}
-			return ++b;
+			else if constexpr(std::is_same_v<const char*, Arg>) {
+				const char* s = *reinterpret_cast <const char* *>(b);
+				os << s;
+				return b + sizeof(const char*);
+			}
+			else if constexpr(std::is_same_v<char*, Arg>) {
+				while (*b != '\0')
+				{
+					os << *b;
+					++b;
+				}
+				return ++b;
+			}
 		}
+
+		template<size_t I>
+		using ele_type = std::tuple_element_t<I, SupportedTypes>;
+
+		template<size_t I>
+		using ele_type_p = ele_type<I>*;
 
 		void stringify(std::ostream & os, char * start, char const * const end)
 		{
@@ -281,28 +275,28 @@ namespace nanolog
 			switch (type_id)
 			{
 			case 0:
-				stringify(os, decode(os, start, static_cast<std::tuple_element<0, SupportedTypes>::type*>(nullptr)), end);
+				stringify(os, decode(os, start, static_cast<ele_type_p<0>>(nullptr)), end);
 				return;
 			case 1:
-				stringify(os, decode(os, start, static_cast<std::tuple_element<1, SupportedTypes>::type*>(nullptr)), end);
+				stringify(os, decode(os, start, static_cast<ele_type_p<1>>(nullptr)), end);
 				return;
 			case 2:
-				stringify(os, decode(os, start, static_cast<std::tuple_element<2, SupportedTypes>::type*>(nullptr)), end);
+				stringify(os, decode(os, start, static_cast<ele_type_p<2>>(nullptr)), end);
 				return;
 			case 3:
-				stringify(os, decode(os, start, static_cast<std::tuple_element<3, SupportedTypes>::type*>(nullptr)), end);
+				stringify(os, decode(os, start, static_cast<ele_type_p<3>>(nullptr)), end);
 				return;
 			case 4:
-				stringify(os, decode(os, start, static_cast<std::tuple_element<4, SupportedTypes>::type*>(nullptr)), end);
+				stringify(os, decode(os, start, static_cast<ele_type_p<4>>(nullptr)), end);
 				return;
 			case 5:
-				stringify(os, decode(os, start, static_cast<std::tuple_element<5, SupportedTypes>::type*>(nullptr)), end);
+				stringify(os, decode(os, start, static_cast<ele_type_p<5>>(nullptr)), end);
 				return;
 			case 6:
-				stringify(os, decode(os, start, static_cast<std::tuple_element<6, SupportedTypes>::type*>(nullptr)), end);
+				stringify(os, decode(os, start, static_cast<ele_type_p<6>>(nullptr)), end);
 				return;
 			case 7:
-				stringify(os, decode(os, start, static_cast<std::tuple_element<7, SupportedTypes>::type*>(nullptr)), end);
+				stringify(os, decode(os, start, static_cast<ele_type_p<7>>(nullptr)), end);
 				return;
 			}
 		}
