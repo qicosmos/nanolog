@@ -89,6 +89,9 @@ namespace nanolog
 		struct is_c_string : std::integral_constant<bool, std::is_same_v<char*, std::decay_t<T>>|| std::is_same_v<const char*, std::decay_t<T>>>
 		{
 		};
+
+		template<typename T>
+		constexpr bool is_c_string_v = is_c_string<T>::value;
 	} // anonymous namespace
 
 	inline char const * to_string(LogLevel loglevel)
@@ -150,13 +153,13 @@ namespace nanolog
 				os.flush();
 		}
 
-		NanoLogLine& operator<<(std::string const & arg)
-		{
-			encode_c_string(arg.c_str(), arg.length());
-			return *this;
-		}
+		//NanoLogLine& operator<<(std::string const & arg)
+		//{
+		//	encode_c_string(arg.c_str(), arg.length());
+		//	return *this;
+		//}
 
-		NanoLogLine& operator<<(char arg) {
+		/*NanoLogLine& operator<<(char arg) {
 			encode < char >(arg, TupleIndex < char, SupportedTypes >::value);
 			return *this;
 		}
@@ -205,14 +208,30 @@ namespace nanolog
 		{
 			encode(arg);
 			return *this;
-		}
+		}*/
 
-		template < size_t N >
-		NanoLogLine& operator<<(const char(&arg)[N])
+		template < typename Arg >
+		NanoLogLine& operator<<(Arg arg)
 		{
-			encode(arg);
+			if constexpr(std::is_arithmetic_v<Arg>) {
+				encode < Arg >(arg, TupleIndex < Arg, SupportedTypes >::value);
+			}
+			else if constexpr(is_c_string_v<Arg>) {
+				encode(arg);
+			}
+			else if constexpr(std::is_same_v<std::string, Arg>) {
+				encode_c_string(arg.c_str(), arg.length());
+			}
+			
 			return *this;
 		}
+
+		//template < size_t N >
+		//NanoLogLine& operator<<(const char(&arg)[N])
+		//{
+		//	encode(arg);
+		//	return *this;
+		//}
 	private:
 
 		char * buffer()
