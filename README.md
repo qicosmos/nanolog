@@ -10,7 +10,7 @@
 	nanolog::initialize(nanolog::GuaranteedLogger(), "/tmp/", "nanolog", 1);
 	LOG_INFO << "Sample NanoLog: " << 1 << 2.5 << 'c';
 
-#如何编译
+# 如何编译
 
 由于使用了C++17的新特性，所以需要支持C++17的编译器，gcc7.2，vs2017 15.5
 
