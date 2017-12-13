@@ -153,63 +153,6 @@ namespace nanolog
 				os.flush();
 		}
 
-		//NanoLogLine& operator<<(std::string const & arg)
-		//{
-		//	encode_c_string(arg.c_str(), arg.length());
-		//	return *this;
-		//}
-
-		/*NanoLogLine& operator<<(char arg) {
-			encode < char >(arg, TupleIndex < char, SupportedTypes >::value);
-			return *this;
-		}
-
-		NanoLogLine& operator<<(int32_t arg)
-		{
-			encode < int32_t >(arg, TupleIndex < int32_t, SupportedTypes >::value);
-			return *this;
-		}
-
-		NanoLogLine& operator<<(uint32_t arg)
-		{
-			encode < uint32_t >(arg, TupleIndex < uint32_t, SupportedTypes >::value);
-			return *this;
-		}
-
-		NanoLogLine& operator<<(int64_t arg)
-		{
-			encode < int64_t >(arg, TupleIndex < int64_t, SupportedTypes >::value);
-			return *this;
-		}
-
-		NanoLogLine& operator<<(uint64_t arg)
-		{
-			encode < uint64_t >(arg, TupleIndex < uint64_t, SupportedTypes >::value);
-			return *this;
-		}
-
-		NanoLogLine& operator<<(double arg)
-		{
-			encode < double >(arg, TupleIndex < double, SupportedTypes >::value);
-			return *this;
-		}
-
-		template < typename Arg >
-		typename std::enable_if < std::is_same < Arg, char const * >::value, NanoLogLine& >::type
-			operator<<(Arg const & arg)
-		{
-			encode(arg);
-			return *this;
-		}
-
-		template < typename Arg >
-		typename std::enable_if < std::is_same < Arg, char * >::value, NanoLogLine& >::type
-			operator<<(Arg const & arg)
-		{
-			encode(arg);
-			return *this;
-		}*/
-
 		template < typename Arg >
 		NanoLogLine& operator<<(Arg arg)
 		{
@@ -226,12 +169,6 @@ namespace nanolog
 			return *this;
 		}
 
-		//template < size_t N >
-		//NanoLogLine& operator<<(const char(&arg)[N])
-		//{
-		//	encode(arg);
-		//	return *this;
-		//}
 	private:
 
 		char * buffer()
@@ -262,18 +199,6 @@ namespace nanolog
 			}
 		}
 
-		void encode(char const * arg)
-		{
-			if (arg != nullptr)
-				encode_c_string(arg, strlen(arg));
-		}
-
-		void encode(char * arg)
-		{
-			if (arg != nullptr)
-				encode_c_string(arg, strlen(arg));
-		}
-
 		void encode_c_string(char const * arg, size_t length)
 		{
 			if (length == 0)
@@ -291,6 +216,18 @@ namespace nanolog
 		//{
 		//	encode < const char* >(arg, TupleIndex < const char*, SupportedTypes >::value);
 		//}
+
+		void encode(char const * arg)
+		{
+			if (arg != nullptr)
+				encode_c_string(arg, strlen(arg));
+		}
+
+		void encode(char * arg)
+		{
+			if (arg != nullptr)
+				encode_c_string(arg, strlen(arg));
+		}
 
 		template < typename Arg >
 		void encode(Arg arg)
