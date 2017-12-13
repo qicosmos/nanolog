@@ -191,13 +191,6 @@ namespace nanolog
 			return *this;
 		}
 
-		template < size_t N >
-		NanoLogLine& operator<<(const char(&arg)[N])
-		{
-			encode(arg);
-			return *this;
-		}
-
 		template < typename Arg >
 		typename std::enable_if < std::is_same < Arg, char const * >::value, NanoLogLine& >::type
 			operator<<(Arg const & arg)
@@ -214,6 +207,12 @@ namespace nanolog
 			return *this;
 		}
 
+		template < size_t N >
+		NanoLogLine& operator<<(const char(&arg)[N])
+		{
+			encode(arg);
+			return *this;
+		}
 	private:
 
 		char * buffer()
