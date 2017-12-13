@@ -81,6 +81,14 @@ namespace nanolog
 		{
 			static constexpr const std::size_t value = 1 + TupleIndex < T, std::tuple < Types... > >::value;
 		};
+
+		template<typename T>
+		struct is_c_string;
+		
+		template<typename T>
+		struct is_c_string : std::integral_constant<bool, std::is_same_v<char*, std::decay_t<T>>|| std::is_same_v<const char*, std::decay_t<T>>>
+		{
+		};
 	} // anonymous namespace
 
 	inline char const * to_string(LogLevel loglevel)
@@ -142,14 +150,14 @@ namespace nanolog
 				os.flush();
 		}
 
-		NanoLogLine& operator<<(char arg) {
-			encode < char >(arg, TupleIndex < char, SupportedTypes >::value);
-			return *this;
-		}
-
 		NanoLogLine& operator<<(std::string const & arg)
 		{
 			encode_c_string(arg.c_str(), arg.length());
+			return *this;
+		}
+
+		NanoLogLine& operator<<(char arg) {
+			encode < char >(arg, TupleIndex < char, SupportedTypes >::value);
 			return *this;
 		}
 
