@@ -115,12 +115,7 @@ namespace nanolog
 		NanoLogLine(LogLevel level, char const * file, char const * function, uint32_t line) : m_bytes_used(0)
 			, m_buffer_size(sizeof(m_stack_buffer))
 		{
-			encode0(timestamp_now());
-			encode0(this_thread_id());
-			encode0(file);
-			encode0(function);
-			encode0(line);
-			encode0(level);
+			encode0(timestamp_now(), this_thread_id(), file, function, line, level);
 		}
 
 		~NanoLogLine() = default;
@@ -160,10 +155,7 @@ namespace nanolog
 				encode(arg, TupleIndex < Arg, SupportedTypes >::value);
 			}
 			else if constexpr(is_c_string_v<Arg>) {
-				encode(arg);
-			}
-			else if constexpr(std::is_same_v<std::string, Arg>) {
-				encode_c_string(arg.c_str(), arg.length());
+				encode_c_string(arg);
 			}
 
 			return *this;
@@ -199,6 +191,13 @@ namespace nanolog
 			}
 		}
 
+		template < typename Arg >
+		void encode_c_string(Arg arg)
+		{
+			if (arg != nullptr)
+				encode_c_string(arg, strlen(arg));
+		}
+
 		void encode_c_string(char const * arg, size_t length)
 		{
 			if (length == 0)
@@ -212,28 +211,17 @@ namespace nanolog
 			m_bytes_used += 1 + length + 1;
 		}
 
-		template < typename Arg >
-		void encode(Arg arg)
+		template < typename... Arg >
+		void encode0(Arg... arg)
 		{
-			if constexpr(is_c_string_v<Arg>) {
-				if (arg != nullptr)
-					encode_c_string(arg, strlen(arg));
-			}
-		}
-
-		template < typename Arg >
-		void encode0(Arg arg)
-		{
-			*reinterpret_cast<Arg*>(buffer()) = arg;
-			m_bytes_used += sizeof(Arg);
+			((*reinterpret_cast<Arg*>(buffer()) = arg, m_bytes_used += sizeof(Arg)), ...);
 		}
 
 		template < typename Arg >
 		void encode(Arg arg, uint8_t type_id)
 		{
 			resize_buffer_if_needed(sizeof(Arg) + sizeof(uint8_t));
-			encode0(type_id);
-			encode0(arg);
+			encode0(type_id, arg);
 		}
 
 		template < typename Arg >
@@ -260,10 +248,7 @@ namespace nanolog
 		}
 
 		template<size_t I>
-		using ele_type = std::tuple_element_t<I, SupportedTypes>;
-
-		template<size_t I>
-		using ele_type_p = ele_type<I>*;
+		using ele_type_p = std::tuple_element_t<I, SupportedTypes>*;
 
 		void stringify(std::ostream & os, char * start, char const * const end)
 		{
